@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeleTube</title>
+    <style>
+        /* Общие стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #0f0f0f;
+            color: #f1f1f1;
+        }
+        
+        /* Шапка */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: #212121;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        /* Бургер-меню и лого */
+        .left-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .burger-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .burger-btn:hover {
+            background-color: #383838;
+        }
+        
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff0000;
+            cursor: pointer;
+        }
+        
+        /* Поиск */
+        .search-container {
+            display: flex;
+            flex-grow: 1;
+            max-width: 600px;
+            margin: 0 20px;
+        }
+        
+        .search-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #303030;
+            background-color: #121212;
+            color: white;
+            font-size: 16px;
+            border-radius: 20px 0 0 20px;
+            outline: none;
+        }
+        
+        .search-btn {
+            padding: 10px 20px;
+            background-color: #303030;
+            border: 1px solid #303030;
+            border-left: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 0 20px 20px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .search-btn:hover {
+            background-color: #404040;
+        }
+        
+        /* Боковое меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100vh;
+            background-color: #212121;
+            transition: left 0.3s;
+            z-index: 99;
+            padding-top: 70px;
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .menu-item {
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .menu-item:hover {
+            background-color: #383838;
+        }
+        
+        .menu-item i {
+            margin-right: 15px;
+            font-size: 20px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 98;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        /* Основной контент */
+        .content {
+            padding: 20px;
+            transition: margin-left 0.3s;
+        }
+        
+        .content.shifted {
+            margin-left: 250px;
+        }
+        
+        /* Видео плеер */
+        .player-container {
+            display: none;
+            margin-bottom: 20px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        #videoPlayer {
+            width: 100%;
+            max-height: 70vh;
+        }
+        
+        /* Результаты поиска */
+        .video-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .video-card {
+            background: #212121;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .video-card:hover {
+            transform: scale(1.03);
+        }
+        
+        .thumbnail {
+            width: 100%;
+            height: 180px;
+            background-color: #383838;
+            position: relative;
+        }
+        
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .duration {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .video-info {
+            padding: 12px;
+        }
+        
+        .video-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .video-channel {
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        /* Кнопка назад */
+        .back-btn {
+            display: none;
+            margin-bottom: 15px;
+            padding: 8px 15px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Загрузка */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+        
+        /* Модальное окно авторизации */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .auth-container {
+            background: #212121;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .auth-title {
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .auth-close {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* Профиль пользователя */
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            object-fit: cover;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка -->
+    <header>
+        <div class="left-section">
+            <button class="burger-btn" id="burgerBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Поиск">
+            <button class="search-btn" id="searchBtn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Боковое меню -->
+    <div class="sidebar" id="sidebar">
+        <div class="menu-item" data-section="home">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </div>
+        <div class="menu-item" data-section="shorts">
+            <i class="fas fa-bolt"></i>
+            <span>TeleShorts</span>
+        </div>
+        <div class="menu-item" data-section="subscriptions">
+            <i class="fas fa-user-friends"></i>
+            <span>Подписки</span>
+        </div>
+        <div class="menu-item" data-section="login" id="loginMenuItem">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Войти</span>
+        </div>
+    </div>
+    
+    <!-- Затемнение фона -->
+    <div class="overlay" id="overlay"></div>
+    
+    <!-- Основной контент -->
+    <div class="content" id="content">
+        <button class="back-btn" id="backBtn">
+            <i class="fas fa-arrow-left"></i> Назад к результатам
+        </button>
+        
+        <div class="player-container" id="playerContainer">
+            <video controls id="videoPlayer"></video>
+        </div>
+        
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner fa-spin"></i> Загрузка...
+        </div>
+        
+        <div class="video-results" id="videoResults">
+            <!-- Здесь будут появляться результаты поиска -->
+        </div>
+    </div>
+    
+    <!-- Модальное окно авторизации -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-container">
+            <h2 class="auth-title">Войти через Telegram</h2>
+            <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                    data-telegram-login="YourTeleTube_bot" 
+                    data-size="large" 
+                    data-onauth="onTelegramAuth(user)" 
+                    data-request-access="write"></script>
+            <button class="auth-close" onclick="hideAuthModal()">
+                Закрыть
+            </button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно профиля -->
+    <div class="auth-modal" id="profileModal">
+        <div class="auth-container">
+            <h2 class="auth-title">Ваш профиль</h2>
+            <img id="userAvatar" class="user-avatar" src="" alt="Аватар">
+            <p id="userName"></p>
+            <p id="userUsername"></p>
+            <button class="auth-close" onclick="logout()">
+                Выйти
+            </button>
+            <button class="auth-close" onclick="hideProfileModal()" style="margin-top:10px;background:#303030;">
+                Закрыть
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Локальная база видео (пример)
+        const videoDatabase = [
+            {
+                id: '1',
+                title: 'Как создать сайт за 5 минут',
+                channel: 'WebDev',
+                thumbnail: 'https://via.placeholder.com/300x180/333/fff?text=WebDev',
+                videoUrl: 'videos/sample1.mp4',
+                tags: ['программирование', 'обучение'],
+                duration: '10:25'
+            },
+            {
+                id: '2',
+                title: 'Обзор нового iPhone 15 Pro Max',
+                channel: 'TechReview',
+                thumbnail: 'https://via.placeholder.com/300x180/333/fff?text=iPhone15',
+                videoUrl: 'videos/sample2.mp4',
+                tags: ['гаджеты', 'обзор', 'apple'],
+                duration: '15:42'
+            },
+            {
+                id: '3',
+                title: 'Рецепт идеального стейка дома',
+                channel: 'Готовим вкусно',
+                thumbnail: 'https://via.placeholder.com/300x180/333/fff?text=Стейк',
+                videoUrl: 'videos/sample3.mp4',
+                tags: ['кулинария', 'рецепты', 'еда'],
+                duration: '8:17'
+            },
+            {
+                id: '4',
+                title: 'Топ 10 фильмов 2023 года',
+                channel: 'Киномания',
+                thumbnail: 'https://via.placeholder.com/300x180/333/fff?text=Фильмы',
+                videoUrl: 'videos/sample4.mp4',
+                tags: ['кино', 'топ', 'развлечения'],
+                duration: '22:35'
+            }
+        ];
+
+        // DOM элементы
+        const burgerBtn = document.getElementById('burgerBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const content = document.getElementById('content');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const videoResults = document.getElementById('videoResults');
+        const loading = document.getElementById('loading');
+        const playerContainer = document.getElementById('playerContainer');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const backBtn = document.getElementById('backBtn');
+        const menuItems = document.querySelectorAll('.menu-item');
+        const authModal = document.getElementById('authModal');
+        const profileModal = document.getElementById('profileModal');
+        const loginMenuItem = document.getElementById('loginMenuItem');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userUsername = document.getElementById('userUsername');
+
+        // Бургер-меню
+        burgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            content.classList.toggle('shifted');
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            content.classList.remove('shifted');
+        });
+
+        // Показ модального окна авторизации
+        function showAuthModal() {
+            authModal.style.display = 'flex';
+            overlay.style.display = 'block';
+        }
+
+        // Скрытие модального окна авторизации
+        function hideAuthModal() {
+            authModal.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        // Показ модального окна профиля
+        function showProfileModal() {
+            const user = JSON.parse(localStorage.getItem('telegramUser'));
+            
+            if (user.photo_url) {
+                userAvatar.src = user.photo_url;
+                userAvatar.style.display = 'block';
+            } else {
+                userAvatar.style.display = 'none';
+            }
+            
+            userName.textContent = `${user.first_name} ${user.last_name || ''}`;
+            userUsername.textContent = user.username ? `@${user.username}` : '';
+            
+            profileModal.style.display = 'flex';
+            overlay.style.display = 'block';
+        }
+
+        // Скрытие модального окна профиля
+        function hideProfileModal() {
+            profileModal.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        // Обработка успешной авторизации через Telegram
+        function onTelegramAuth(user) {
+            // Сохраняем данные пользователя
+            localStorage.setItem('telegramUser', JSON.stringify(user));
+            
+            // Закрываем модальное окно
+            hideAuthModal();
+            
+            // Обновляем интерфейс
+            updateAuthUI();
+            
+            // Показываем приветствие
+            alert(`Добро пожаловать, ${user.first_name}${user.username ? ' (@' + user.username + ')' : ''}!`);
+        }
+
+        // Выход из системы
+        function logout() {
+            localStorage.removeItem('telegramUser');
+            updateAuthUI();
+            hideProfileModal();
+            alert('Вы вышли из системы');
+        }
+
+        // Обновление интерфейса после авторизации
+        function updateAuthUI() {
+            const user = JSON.parse(localStorage.getItem('telegramUser'));
+            
+            if (user) {
+                loginMenuItem.innerHTML = `
+                    <i class="fas fa-user"></i>
+                    <span>${user.first_name}</span>
+                `;
+            } else {
+                loginMenuItem.innerHTML = `
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Войти</span>
+                `;
+            }
+        }
+
+        // Навигация по меню
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.getAttribute('data-section');
+                
+                if (section === 'login') {
+                    if (localStorage.getItem('telegramUser')) {
+                        showProfileModal();
+                    } else {
+                        showAuthModal();
+                    }
+                    return;
+                }
+                
+                showSection(section);
+                
+                if (window.innerWidth < 768) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                    content.classList.remove('shifted');
+                }
+            });
+        });
+
+        // Поиск видео
+        searchBtn.addEventListener('click', searchVideos);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchVideos();
+        });
+
+        function searchVideos() {
+            const query = searchInput.value.trim().toLowerCase();
+            loading.style.display = 'block';
+            videoResults.innerHTML = '';
+            hidePlayer();
+
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                if (!query) {
+                    displayResults(videoDatabase);
+                    return;
+                }
+
+                const results = videoDatabase.filter(video => 
+                    video.title.toLowerCase().includes(query) || 
+                    video.channel.toLowerCase().includes(query) || 
+                    (video.tags && video.tags.some(tag => tag.toLowerCase().includes(query)))
+                );
+
+                displayResults(results.length ? results : videoDatabase);
+            }, 300);
+        }
+
+        // Отображение результатов
+        function displayResults(videos) {
+            videoResults.innerHTML = videos.map(video => `
+                <div class="video-card" data-video-id="${video.id}">
+                    <div class="thumbnail">
+                        <img src="${video.thumbnail}" alt="${video.title}">
+                        <div class="duration">${video.duration}</div>
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${video.title}</div>
+                        <div class="video-channel">${video.channel}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Обработчики для карточек видео
+            document.querySelectorAll('.video-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const videoId = this.getAttribute('data-video-id');
+                    playVideo(videoId);
+                });
+            });
+        }
+
+        // Воспроизведение видео
+        function playVideo(videoId) {
+            const video = videoDatabase.find(v => v.id === videoId);
+            if (!video) return;
+
+            videoPlayer.src = video.videoUrl;
+            playerContainer.style.display = 'block';
+            videoResults.style.display = 'none';
+            backBtn.style.display = 'block';
+            
+            videoPlayer.play().catch(e => console.error('Ошибка воспроизведения:', e));
+        }
+
+        // Скрытие плеера
+        function hidePlayer() {
+            playerContainer.style.display = 'none';
+            videoResults.style.display = 'grid';
+            backBtn.style.display = 'none';
+            videoPlayer.pause();
+        }
+
+        // Кнопка "Назад"
+        backBtn.addEventListener('click', hidePlayer);
+
+        // Показ раздела
+        function showSection(section) {
+            switch(section) {
+                case 'home':
+                    displayResults(videoDatabase);
+                    break;
+                case 'shorts':
+                    videoResults.innerHTML = '<p style="grid-column:1/-1;text-align:center;">Здесь будут ваши TeleShorts</p>';
+                    break;
+                case 'subscriptions':
+                    videoResults.innerHTML = '<p style="grid-column:1/-1;text-align:center;">Ваши подписки появятся здесь</p>';
+                    break;
+                default:
+                    displayResults(videoDatabase);
+            }
+            hidePlayer();
+        }
+
+        // Инициализация
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+            showSection('home');
+        });
+    </script>
+</body>
+</html>
